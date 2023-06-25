@@ -1,6 +1,7 @@
 import pandas as pd
 from nltk.corpus import words,stopwords
 from gensim.models.phrases import Phrases, Phraser
+from geotext import GeoText
 import spacy
 import gensim
 import string
@@ -41,6 +42,9 @@ class Processer:
     def __init__(self, filename:str) -> None:
         self.filename:str = filename
         self.outfile:str = filename[:filename.index('.') + 1]
+        self.words = set(words.words())
+        self.stop_words = set(stopwords.words('english'))
+        self.punctuation = set(string.punctuation)
         self.collection:Collection = Collection()
     def __do_savepoint__(self, id:str):
         content = ""
@@ -56,14 +60,10 @@ class Processer:
                 self.collection.docs.append((line.replace("\n", "")).split(" "))
         self.collection.evaluate()
     def __clean_garbage(self):
-        wds = set(words.words())
-        stop = set(stopwords.words('english'))
-        exclude = set(string.punctuation)
-
         def clean(doc: str) -> str:
-            stop_free = " ".join(w for w in doc.lower().split() if w not in stop and len(w) < 15)
-            punc_free = ''.join(' ' if w in exclude else w for w in stop_free)
-            t_words = " ".join(w for w in punc_free.lower().split() if w in wds)
+            stop_free = " ".join(w for w in doc.lower().split() if w not in self.stop_words and len(w) < 15)
+            punc_free = ''.join(' ' if w in self.punctuation else w for w in stop_free)
+            t_words = " ".join(w for w in punc_free.lower().split() if w in self.words)
             return t_words
 
         self.collection.docs = [clean(d) for d in self.collection.docs]
@@ -103,8 +103,12 @@ class Processer:
 
         for row in df.iterrows():
             try:
-                doc = '\n'.join(row[1][column] for column in columns)
-                self.collection.docs.append(doc[:-1])
+                doc = ' '.join(row[1][column] for column in columns)
+                geo = GeoText(doc)
+                self.words.update([city.lower() for city in geo.cities])
+                self.words.update([country.lower() for country in geo.countries])
+                self.words.update([nationality.lower() for nationality in geo.nationalities])
+                self.collection.docs.append(doc)
             except:
                 continue
 
@@ -115,7 +119,7 @@ class Processer:
                 self.collection.docs.append((line.replace("\n", "")).split(" "))
                 self.collection.evaluate()
     def transform(self, use_savepoint=False, savepoint="smallfree") -> list[list[str]]:
-        if use_savepoint:
+        if use_savepoint and os.path.isfile(f"./data/{savepoint}-{self.outfile}.txt"):
             self.__load_savepoint__(savepoint)
             self.__do_savepoint__("processed")
             return self.collection.docs
@@ -123,9 +127,11 @@ class Processer:
         print("Clean docs")
         self.__clean_garbage()
         print("Lemmatizing words")
-        self.__lemmatization()
+        if not use_savepoint or not os.path.isfile(f"./data/lemma-{self.outfile}.txt"):
+            self.__lemmatization()
         print("Buid N-Grams")
-        self.__grams_builder()
+        if not os.path.isfile(f"./data/n-grams-{self.outfile}.txt"):
+            self.__grams_builder(use_savepoint=use_savepoint)
         print("Remove small words")
         self.__remove_small_words()
         self.__do_savepoint__("processed")
