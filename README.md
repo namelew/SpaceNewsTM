@@ -13,8 +13,18 @@ Creating topics from the news in Space News Dataset using MGLDA
     * Windows
     ```
     python -m venv myenv
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
     .\myenv\Scripts\activate
     pip install -r ./requirements.txt
     python ./utils/Internal.py
     ```
 ## Run
+PS:
+Run
+```
+Set-ExecutionPolicy Restricted
+```
+to undo
+```
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+```

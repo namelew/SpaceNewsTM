@@ -3,5 +3,6 @@ nltk
 gensim
 tomotopy
 matplotlib
-sklearn
+scikit-learn
+geotext
 pandas
