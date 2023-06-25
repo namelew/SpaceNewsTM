@@ -1,5 +1,6 @@
 from preprocess.Text import Processer
+from models.TopicModeling import TopicModeler
 
-p = Processer("./data/spacenews-2022.csv")
-p.from_csv(['title', 'content', 'author'])
-p.transform(use_savepoint=True)
+tm = TopicModeler()
+tm.BuildBags(use_savepoint=True)
+tm.byClusters()

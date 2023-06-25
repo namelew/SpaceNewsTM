@@ -41,7 +41,7 @@ class Collection:
 class Processer:
     def __init__(self, filename:str) -> None:
         self.filename:str = filename
-        self.outfile:str = filename[:filename.index('.') + 1]
+        self.outfile:str = "spacenews-2022"
         self.words = set(words.words())
         self.stop_words = set(stopwords.words('english'))
         self.punctuation = set(string.punctuation)
@@ -123,15 +123,13 @@ class Processer:
             self.__load_savepoint__(savepoint)
             self.__do_savepoint__("processed")
             return self.collection.docs
-    
+
         print("Clean docs")
         self.__clean_garbage()
         print("Lemmatizing words")
-        if not use_savepoint or not os.path.isfile(f"./data/lemma-{self.outfile}.txt"):
-            self.__lemmatization()
+        self.__lemmatization()
         print("Buid N-Grams")
-        if not os.path.isfile(f"./data/n-grams-{self.outfile}.txt"):
-            self.__grams_builder(use_savepoint=use_savepoint)
+        self.__grams_builder()
         print("Remove small words")
         self.__remove_small_words()
         self.__do_savepoint__("processed")
